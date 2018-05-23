@@ -10,6 +10,7 @@ import os, sys, time, logging, math, colorsys, random
 import pyautogui as pag
 import helpers
 import loginInfo
+import gui
 from PIL import ImageGrab, Image
 import win32api, win32con
 
@@ -50,7 +51,6 @@ def isMouseOnTree():
 
 # Determine if tree is at given position
 def isTreeAtPosition_old(pos):
-    #pag.moveTo(pos[0], pos[1], 0.1)
     helpers.mouseTo(pos[0], pos[1])
     return isMouseOnTree()
 
@@ -388,7 +388,6 @@ def isInvFull():
 def dropAllInv():
     pag.keyDown('shift')
     for pos in helpers.hud['invSlots']:
-        #pag.moveTo(pos[0], pos[1], 0.1)
         helpers.mouseTo(pos[0], pos[1])
         pag.click()
     pag.keyUp('shift')
@@ -398,7 +397,6 @@ def dropAllInv():
 def dropAllButOneInv():
     pag.keyDown('shift')
     for pos in helpers.hud['invSlots'][1:]:
-        #pag.moveTo(pos[0], pos[1], 0.1)
         helpers.mouseTo(pos[0], pos[1])
         pag.click()
     pag.keyUp('shift')
@@ -410,7 +408,6 @@ def dropAllItem(name):
     for i in range(28):
         if isItemInSlot(name=name, slot=i):
             pos = helpers.hud['invSlots'][i]
-            #pag.moveTo(pos[0], pos[1], 0.1)
             helpers.mouseTo(pos[0], pos[1])
             pag.click()
     pag.keyUp('shift')
@@ -430,7 +427,6 @@ def clickMap(x, y):
         logging.warning('Invalid position passed to clickMap')
         return
     center = helpers.hud['mapCenter']
-    #pag.moveTo(center[0]+x, center[1]+y, 0.1)
     helpers.mouseTo(center[0]+x, center[1]+y)
     time.sleep(0.5)
     pag.click()
@@ -497,22 +493,20 @@ Script
 """
 
 # Start client and log in if not already
-clientName = 'RuneLite'
-clientPath = 'C:\\RuneLite\\RuneLite.exe'
+clientName = loginInfo.clientName
+clientPath = loginInfo.clientPath
 if not helpers.startClient(clientName, clientPath):
     print('Could not start client. Exiting')
     sys.exit(0)
 helpers.login(loginInfo.username, 393)
 
-# Ask user to start script
-userConfirm = pag.confirm(
-    text='Click OK to start woodcutting script',
-    title='Woodcutting',
-    buttons=['OK', 'Cancel']
-    )
-if userConfirm == 'Cancel':
+# Show start GUI to get user options
+options = gui.woodcutterStartGui()
+if options['start'] == 'Cancel':
     print('User cancelled script. Exiting')
     sys.exit(0)
+print('Tree type: ' + options['treetype'].get())
+print('Bank: ' + str(options['bank'].get()))
 helpers.focusClient(clientName)
 helpers.setHud()
 
@@ -532,7 +526,9 @@ while findNewTree:
     
     # Try to find a tree
     logging.info('Searching for tree...')
-    if failCounter > 5:
+    if isUnderAttack():
+            evade()
+    if failCounter > 10:
         print('Failed to find tree. Exiting')
         sys.exit(0)
     if failCounter > 0 and not blocked:
@@ -540,9 +536,9 @@ while findNewTree:
     possibleTrees = findTrees()
     clickedTree = False
     if blocked:
+        # Shuffle possibleTrees so you don't keep clicking the blocked tree
         possibleTrees = random.sample(possibleTrees, len(possibleTrees))
     for pos in possibleTrees:
-        #pag.moveTo(pos[0], pos[1], 0.1)
         helpers.mouseTo(pos[0], pos[1])
         time.sleep(0.1)
         if isMouseOnTree():
@@ -583,10 +579,10 @@ while findNewTree:
     # Uses scanSections to detect if new stumps appear near player
     sectionsStart = scanSections()
     sectionsUpdate = sectionsStart.copy()
-    sectionsEqual = True
+    newStumpFound = False
     scanCounter = 0
     logging.info('Waiting to finish chopping...')
-    while sectionsEqual:
+    while not newStumpFound:
         scanCounter += 1
         if isUnderAttack():
             evade()
@@ -596,13 +592,13 @@ while findNewTree:
             time.sleep(1)
             sectionsUpdate = scanSections()
             for sec in sectionsStart:
-                if sectionsStart[sec] != sectionsUpdate[sec]:
-                    sectionsEqual = False
+                if sectionsStart[sec] == False and sectionsUpdate[sec] == True:
+                    newStumpFound = True
                     break            
-    if sectionsEqual:
-        logging.info('Chopping time expired.')
-    else:
+    if newStumpFound:
         logging.info('Finished chopping tree.')
+    else:
+        logging.info('Chopping time expired.')
                      
     # Chopping has stopped
     # If under attack, evade
