@@ -42,6 +42,9 @@ Oy = None
 # Dict storing HUD locations; initialized in getHud call
 hud = None
 
+# User password, initialized after user enters it in login GUI
+pw = None
+
 # Useful coords (relative to origin)
 coordConsts = {
     'viewTlc': (4, 4),
@@ -59,6 +62,24 @@ stump = {
     }
 stump['width'] = stump['brcX'] - stump['tlcX']
 stump['height'] = stump['brcY'] - stump['tlcY']
+oakstump = {
+    'tlcX': 188,
+    'tlcY': 99,
+    'brcX': 324,
+    'brcY': 235,
+    'radius': 38,
+    }
+oakstump['width'] = oakstump['brcX'] - oakstump['tlcX']
+oakstump['height'] = oakstump['brcY'] - oakstump['tlcY']
+willowstump = {
+    'tlcX': 208,
+    'tlcY': 119,
+    'brcX': 324,
+    'brcY': 235,
+    'radius': 38,
+    }
+willowstump['width'] = willowstump['brcX'] - willowstump['tlcX']
+willowstump['height'] = willowstump['brcY'] - willowstump['tlcY'] 
 
 
 """----------------------------------------------------------------------------
@@ -215,14 +236,20 @@ def isLoggedIn():
 def login(username, world):
     global Ox
     global Oy
+    global pw
     startPAUSE = pag.PAUSE
     
     if isLoggedIn():
         resetOrigin()
         return
     
-    # Wait for login buttons to appear
+    # Wait for login buttons to appear (max wait 20 sec)
+    waitCounter = 0
     while not pag.locateCenterOnScreen(images['exbutton']):
+        waitCounter += 1
+        if waitCounter > 40:
+            logging.warning('Login failed: could not find exbutton')
+            return
         time.sleep(0.5)
 
     # Select world
@@ -232,19 +259,22 @@ def login(username, world):
 
     # Enter login data
     clickButton(images['exbutton'])
-    promptText = ('Username: ' + username +
-        '\nTo change username, edit file loginInfo.py' +
-        '\nEnter password:')
-    password = pag.password(text=promptText, title='Login')
-    if not password:
-        logging.info('User cancelled login.')
-        return
-    if len(password) == 0:
-        logging.info('User submitted empty password.')
-        return
+    # Get password if not already initialized
+    if not pw:
+        promptText = ('Username: ' + username +
+            '\n(To change username, edit file loginInfo.py)' +
+            '\nEnter password:')
+        password = pag.password(text=promptText, title='Login')
+        if not password:
+            logging.info('User cancelled login.')
+            return
+        if len(password) == 0:
+            logging.info('User submitted empty password.')
+            return
+        pw = password
     pag.PAUSE = 0
-    for i in range(len(password)):
-        pag.press(password[i])
+    for i in range(len(pw)):
+        pag.press(pw[i])
         time.sleep(0.05 + random.random()*0.15)
     pag.press('tab')
     for i in range(50):

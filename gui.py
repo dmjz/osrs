@@ -138,6 +138,12 @@ def woodcutterStartGui():
     cancelWdg = ttk.Button(mainframe, text='Cancel', command=cancelWdgClick)
     cancelWdg.grid(column=2, row=5, sticky='es')
 
+    # Behavior on window close
+    def onClose():
+        start.set('Close')
+        root.destroy()
+    root.protocol('WM_DELETE_WINDOW', onClose)
+
     # Launch window and return vars
     root.mainloop()
     return {'treetype': treetype, 'bank': bank, 'start': start}

@@ -3,7 +3,10 @@
 """
 woodcutter.py
 
-Cuts normal trees and drops the logs
+Cuts trees and drops the logs
+Future improvements:
+ - Cutting other types of logs
+ - Banking valuable logs (ie yews)
 """
 
 import os, sys, time, logging, math, colorsys, random
@@ -37,15 +40,25 @@ def processImageTree(im):
             else:
                 pix[i,j] = (0,0,0)
 
-# Screenshot and process shot to search text and find 'Tree'
-# This should have no false positives.
-def isMouseOnTree():
+# Screenshot and process shot to search cursor text for tree name
+# This should have no false positives
+def isMouseOnTree(treeType):
     pixCd1 = helpers.coordsClientToPix((81,7))
     pixCd2 = helpers.coordsClientToPix((115,21))
     im = ImageGrab.grab((pixCd1[0], pixCd1[1], pixCd2[0], pixCd2[1]))
     processImageTree(im)
-    for i in range(6):
-        if pag.locate('images\\testTree' + str(i+1) + '.png', im):
+    treeFound = False
+    if treeType == 'Normal':
+        pathPre = 'images\\testTree'
+        nPics = 6
+    elif treeType == 'Oak':
+        pathPre = 'images\\testOak'
+        nPics = 3
+    elif treeType == 'Willow':
+        pathPre = 'images\\testWillow'
+        nPics = 4
+    for i in range(nPics):
+        if pag.locate(pathPre + str(i+1) + '.png', im):
             return True
     return False
 
@@ -150,7 +163,7 @@ def getHueFromRgb(rgb):
     return int(round(hue*240))
 
 # Get patch at position, decide if it's probably a tree
-def isTreeAtPos(pos, patchSize):
+def isTreeAtPos(pos, patchSize, treeType):
     im = ImageGrab.grab((pos[0], pos[1], pos[0]+patchSize, pos[1]+patchSize))
     patch = im.load()
     hues = getHueCounts(patch, patchSize)
@@ -161,16 +174,23 @@ def isTreeAtPos(pos, patchSize):
     for hue in range(46, 50):
         if hue in hues:
             inRangeCount += hues[hue]
-    if ( inRangeCount/(patchSize*patchSize) < 0.25 ):
-        return False
-    if ( not 40 in hues ) or ( hues[40]/(patchSize*patchSize) < 0.025 ):
-        return False
-    return True
+    if treeType == 'Normal' or treeType == 'Oak':
+        if ( inRangeCount/(patchSize*patchSize) < 0.25 ):
+            return False
+        if ( not 40 in hues ) or ( hues[40]/(patchSize*patchSize) < 0.025 ):
+            return False
+        return True
+    if treeType == 'Willow':
+        if ( inRangeCount/(patchSize*patchSize) < 0.25 ):
+            return False
+        if ( not 44 in hues ) or ( hues[44]/(patchSize*patchSize) < 0.025 ):
+            return False
+        return True
 
 # Return a list of probable positions with trees based on sampling
 # pixel patches
 # Positions might not actually be trees.
-def findTrees():
+def findTrees(treeType):
     pixCd1 = helpers.coordsClientToPix((4,4))
     pixCd2 = helpers.coordsClientToPix((516,338))
     im = ImageGrab.grab((pixCd1[0], pixCd1[1], pixCd2[0], pixCd2[1]))
@@ -186,7 +206,7 @@ def findTrees():
         x = blockLen*positions[i][0] + halfBlock
         y = blockLen*positions[i][1] + halfBlock
         pos = helpers.coordsClientToPix((x,y))
-        if isTreeAtPos(pos, patchSize):
+        if isTreeAtPos(pos, patchSize, treeType):
             goodPositions.append((pos[0] + halfPatch, pos[1] + halfPatch))
             
     return goodPositions
@@ -229,104 +249,97 @@ def findOneTree_old():
 
 # Return a dict with entries 'code':bool where 'code' is a section code
 # and the bool indicates if there is a stump in that section
-def scanSections():
-    im = ImageGrab.grab((
-        helpers.Ox + helpers.stump['tlcX'],
-        helpers.Oy + helpers.stump['tlcY'],
-        helpers.Ox + helpers.stump['brcX'],
-        helpers.Oy + helpers.stump['brcY']
-        ))
+def scanSections(treeType):
+    if treeType == 'Normal':
+        im = ImageGrab.grab((
+            helpers.Ox + helpers.stump['tlcX'],
+            helpers.Oy + helpers.stump['tlcY'],
+            helpers.Ox + helpers.stump['brcX'],
+            helpers.Oy + helpers.stump['brcY']
+            ))
+        sWidth = helpers.stump['width']
+        sHeight = helpers.stump['height']
+        sRadius = helpers.stump['radius']
+    elif treeType == 'Oak':
+        im = ImageGrab.grab((
+            helpers.Ox + helpers.oakstump['tlcX'],
+            helpers.Oy + helpers.oakstump['tlcY'],
+            helpers.Ox + helpers.oakstump['brcX'],
+            helpers.Oy + helpers.oakstump['brcY']
+            ))
+        sWidth = helpers.oakstump['width']
+        sHeight = helpers.oakstump['height']
+        sRadius = helpers.oakstump['radius']
+    elif treeType == 'Willow':
+        im = ImageGrab.grab((
+            helpers.Ox + helpers.willowstump['tlcX'],
+            helpers.Oy + helpers.willowstump['tlcY'],
+            helpers.Ox + helpers.willowstump['brcX'],
+            helpers.Oy + helpers.willowstump['brcY']
+            ))
+        sWidth = helpers.willowstump['width']
+        sHeight = helpers.willowstump['height']
+        sRadius = helpers.willowstump['radius']
+    else:
+        logging.warning('Invalid treeType in scanSections')
+        return -1
+        
     pix = im.load()
-    sWidth = helpers.stump['width']
-    sHeight = helpers.stump['height']
-    sRadius = helpers.stump['radius']
-
+    hue = 0
     sections = {}
+    sectionRanges = {
+        'TL': {'x': (0, sWidth//2), 'y': (0, sRadius)},
+        'TR': {'x': (sWidth//2, sWidth), 'y': (0, sRadius)},
+        'R':  {'x': (sWidth-sRadius, sWidth), 'y': (sRadius, sHeight-sRadius)},
+        'BR': {'x': (sWidth//2, sWidth), 'y': (sHeight-sRadius, sRadius)},
+        'BL': {'x': (0, sWidth//2), 'y': (sHeight-sRadius, sHeight)},
+        'L':  {'x': (0, sRadius), 'y': (sRadius, sHeight-sRadius)},
+        }
+    # Special center section for willows due to odd tree shape
+    if treeType == 'Willow':
+        sectionRanges['C'] = {
+            'x': (sRadius, sWidth-sRadius), 'y': (sRadius, sHeight-sRadius)
+            }
     
-    # TL
-    hueCount20 = 0
-    hueCount21 = 0
-    for x in range(0, sWidth//2):
-        for y in range(sRadius):
-            if getHueFromRgb(pix[x,y]) == 20:
-                hueCount20 += 1
-            elif getHueFromRgb(pix[x,y]) == 21:
-                hueCount21 += 1
-    if (hueCount20 > 1) or (hueCount20 > 0 and hueCount21 > 3):
-        sections['TL'] = True
-    else:
-        sections['TL'] = False
-        
-    # TR
-    hueCount20 = 0
-    hueCount21 = 0
-    for x in range(sWidth//2, sWidth):
-        for y in range(sRadius):
-            if getHueFromRgb(pix[x,y]) == 20:
-                hueCount20 += 1
-            elif getHueFromRgb(pix[x,y]) == 21:
-                hueCount21 += 1
-    if (hueCount20 > 1) or (hueCount20 > 0 and hueCount21 > 3):
-        sections['TR'] = True
-    else:
-        sections['TR'] = False
-        
-    # R
-    hueCount20 = 0
-    hueCount21 = 0
-    for x in range(sWidth - sRadius, sWidth):
-        for y in range(sRadius, sHeight - sRadius):
-            if getHueFromRgb(pix[x,y]) == 20:
-                hueCount20 += 1
-            elif getHueFromRgb(pix[x,y]) == 21:
-                hueCount21 += 1
-    if (hueCount20 > 1) or (hueCount20 > 0 and hueCount21 > 3):
-        sections['R'] = True
-    else:
-        sections['R'] = False
-        
-    # BR
-    hueCount20 = 0
-    hueCount21 = 0
-    for x in range(sWidth//2, sWidth):
-        for y in range(sHeight - sRadius, sHeight):
-            if getHueFromRgb(pix[x,y]) == 20:
-                hueCount20 += 1
-            elif getHueFromRgb(pix[x,y]) == 21:
-                hueCount21 += 1
-    if (hueCount20 > 1) or (hueCount20 > 0 and hueCount21 > 3):
-        sections['BR'] = True
-    else:
-        sections['BR'] = False
-        
-    # BL
-    hueCount20 = 0
-    hueCount21 = 0
-    for x in range(0, sWidth//2):
-        for y in range(sHeight - sRadius, sHeight):
-            if getHueFromRgb(pix[x,y]) == 20:
-                hueCount20 += 1
-            elif getHueFromRgb(pix[x,y]) == 21:
-                hueCount21 += 1
-    if (hueCount20 > 1) or (hueCount20 > 0 and hueCount21 > 3):
-        sections['BL'] = True
-    else:
-        sections['BL'] = False
-        
-    # L
-    hueCount20 = 0
-    hueCount21 = 0
-    for x in range(sRadius):
-        for y in range(sRadius, sHeight - sRadius):
-            if getHueFromRgb(pix[x,y]) == 20:
-                hueCount20 += 1
-            elif getHueFromRgb(pix[x,y]) == 21:
-                hueCount21 += 1
-    if (hueCount20 > 1) or (hueCount20 > 0 and hueCount21 > 3):
-        sections['L'] = True
-    else:
-        sections['L'] = False
-    # Return result
+    for key in sectionRanges:
+        hueCount20 = 0
+        hueCount21 = 0
+        hueCount22 = 0
+        hueCount23 = 0
+        hueCount32 = 0
+        hueCount38 = 0
+        hueCount40 = 0
+        for x in range(sectionRanges[key]['x'][0], sectionRanges[key]['x'][1]):
+            for y in range(sectionRanges[key]['y'][0], sectionRanges[key]['y'][1]):
+                hue = getHueFromRgb(pix[x,y])
+                if hue == 20:
+                    hueCount20 += 1
+                elif hue == 21:
+                    hueCount21 += 1
+                elif hue == 22:
+                    hueCount22 += 1
+                elif hue == 23:
+                    hueCount23 += 1
+                elif hue == 32:
+                    hueCount32 += 1
+                elif hue == 38:
+                    hueCount38 += 1
+                elif hue == 40:
+                    hueCount40 += 1
+        normalCrit = ( (hueCount20 > 1) or (hueCount20 > 0 and hueCount21 > 3) )
+        oakCrit = ( hueCount22 > 60 and hueCount21 > 10 and hueCount23 > 0 )
+        willowCrit = (
+            hueCount32 < 140 and hueCount32 > 40 and
+            (hueCount21 > 2 or (hueCount38 > 3 and hueCount40 < 28))
+            )
+        if treeType == 'Normal' and normalCrit:
+            sections[key] = True
+        elif treeType == 'Oak' and oakCrit:
+            sections[key] = True
+        elif treeType == 'Willow' and willowCrit:
+            sections[key] = True
+        else:
+            sections[key] = False
     return sections
 
 ### Inventory/HUD --------------------------------------------------------------
@@ -500,28 +513,37 @@ if not helpers.startClient(clientName, clientPath):
     sys.exit(0)
 helpers.login(loginInfo.username, 393)
 
-# Show start GUI to get user options
+# Use GUI to get user options, then reformat some options
 options = gui.woodcutterStartGui()
-if options['start'] == 'Cancel':
+if options['start'].get() == 'Cancel':
     print('User cancelled script. Exiting')
     sys.exit(0)
-print('Tree type: ' + options['treetype'].get())
-print('Bank: ' + str(options['bank'].get()))
-helpers.focusClient(clientName)
-helpers.setHud()
+if options['start'].get() == 'Close':
+    print('User closed window. Exiting')
+    sys.exit(0)
+for key in options:
+    options[key] = options[key].get()
+if options['treetype'] == 'Normal':
+    options['invitem'] = 'Logs'
+else:
+    options['invitem'] = options['treetype'] + ' logs'
 
 # Set up HUD, camera, inventory
+helpers.focusClient(clientName)
+helpers.setHud()
 hudTab = clickHudTab('inventory')
 resetCamera()
 if isInvFull():
     logging.info('Detected full inventory')
     logging.info('Emptying inventory...')
-    dropAllInv()
+    dropAllItem(options['invitem'])
     logging.info('Done emptying.')
 
 findNewTree = True
 failCounter = 0
 blocked = False
+
+## Main loop for finding and chopping trees
 while findNewTree:
     
     # Try to find a tree
@@ -533,7 +555,7 @@ while findNewTree:
         sys.exit(0)
     if failCounter > 0 and not blocked:
         perturbCamera()
-    possibleTrees = findTrees()
+    possibleTrees = findTrees(options['treetype'])
     clickedTree = False
     if blocked:
         # Shuffle possibleTrees so you don't keep clicking the blocked tree
@@ -541,7 +563,7 @@ while findNewTree:
     for pos in possibleTrees:
         helpers.mouseTo(pos[0], pos[1])
         time.sleep(0.1)
-        if isMouseOnTree():
+        if isMouseOnTree(options['treetype']):
             clickedTree = True
             pag.click()
             logging.info('Clicked tree')
@@ -551,16 +573,11 @@ while findNewTree:
         continue
         
     # Reset camera if moved during treefinding
-    # Then wait while you run to tree
     if failCounter > 0 and not blocked:
         resetCamera()
-    ##
-    ## Note: increasing this time will prevent you from starting a new tree
-    ## search while still chopping, but will also cause you to wait the full
-    ## 10 seconds if you fell the tree too fast. The former error is preferable
-    ## because you'll probably click the tree you're already chopping.
-    ##
-    time.sleep(2)
+    # Wait to run to tree if cutting Normal trees
+    if options['treetype'] == 'Normal':
+        time.sleep(2)
 
     # Check for path blocked text in chat box
     tlc = helpers.coordsClientToPix((9,443))
@@ -577,37 +594,42 @@ while findNewTree:
 
     # Wait until woodcutting stopped
     # Uses scanSections to detect if new stumps appear near player
-    sectionsStart = scanSections()
+    sectionsStart = scanSections(options['treetype'])
     sectionsUpdate = sectionsStart.copy()
     newStumpFound = False
     scanCounter = 0
+    maxSec = random.randint(8, 12) #wait 8-12 sec to fell tree
     logging.info('Waiting to finish chopping...')
     while not newStumpFound:
         scanCounter += 1
         if isUnderAttack():
             evade()
-        elif scanCounter > 10: #will wait no longer than 10 sec to fell tree
+        elif scanCounter > maxSec: #wait no longer than maxSec to fell tree
+            break
+        elif isItemInSlot(options['invitem'], 27): #check for full inv
             break
         else:
             time.sleep(1)
-            sectionsUpdate = scanSections()
+            sectionsUpdate = scanSections(options['treetype'])
             for sec in sectionsStart:
                 if sectionsStart[sec] == False and sectionsUpdate[sec] == True:
                     newStumpFound = True
-                    break            
+                    break
+    # Exited loop: log reason
     if newStumpFound:
         logging.info('Finished chopping tree.')
-    else:
+    elif scanCounter > maxSec:
         logging.info('Chopping time expired.')
+    else:
+        logging.info('Ran out of inventory space.')
                      
-    # Chopping has stopped
     # If under attack, evade
     if isUnderAttack():
         evade()          
     # If Logs in last inv slot, drop all Logs
-    if isItemInSlot('Logs', 27):
+    if isItemInSlot(options['invitem'], 27):
         logging.info('Full inventory. Emptying...')
-        dropAllItem('Logs')
+        dropAllItem(options['invitem'])
         logging.info('Done emptying.')
 
     
