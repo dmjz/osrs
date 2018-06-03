@@ -14,6 +14,7 @@ import pyautogui as pag
 import helpers
 import loginInfo
 import gui
+from mouseMoveFunction import mouseTo
 from PIL import ImageGrab, Image
 import win32api, win32con
 
@@ -64,7 +65,7 @@ def isMouseOnTree(treeType):
 
 # Determine if tree is at given position
 def isTreeAtPosition_old(pos):
-    helpers.mouseTo(pos[0], pos[1])
+    mouseTo(pos[0], pos[1])
     return isMouseOnTree()
 
 # Helper function for concentricList
@@ -401,7 +402,7 @@ def isInvFull():
 def dropAllInv():
     pag.keyDown('shift')
     for pos in helpers.hud['invSlots']:
-        helpers.mouseTo(pos[0], pos[1])
+        mouseTo(pos[0], pos[1])
         pag.click()
     pag.keyUp('shift')
 
@@ -410,7 +411,7 @@ def dropAllInv():
 def dropAllButOneInv():
     pag.keyDown('shift')
     for pos in helpers.hud['invSlots'][1:]:
-        helpers.mouseTo(pos[0], pos[1])
+        mouseTo(pos[0], pos[1])
         pag.click()
     pag.keyUp('shift')
 
@@ -421,7 +422,7 @@ def dropAllItem(name):
     for i in range(28):
         if isItemInSlot(name=name, slot=i):
             pos = helpers.hud['invSlots'][i]
-            helpers.mouseTo(pos[0], pos[1])
+            mouseTo(pos[0], pos[1])
             pag.click()
     pag.keyUp('shift')
 
@@ -440,7 +441,7 @@ def clickMap(x, y):
         logging.warning('Invalid position passed to clickMap')
         return
     center = helpers.hud['mapCenter']
-    helpers.mouseTo(center[0]+x, center[1]+y)
+    mouseTo(center[0]+x, center[1]+y)
     time.sleep(0.5)
     pag.click()
         
@@ -468,7 +469,7 @@ def holdKey(key, holdTime):
 def resetCamera():
     #pag.moveTo(helpers.hud['compass'])
     pos = helpers.hud['compass']
-    helpers.mouseTo(pos[0], pos[1])
+    mouseTo(pos[0], pos[1])
     pag.click()
     holdKey('up', 2)
 
@@ -539,17 +540,47 @@ if isInvFull():
     dropAllItem(options['invitem'])
     logging.info('Done emptying.')
 
-findNewTree = True
+# Treefinding vars
 failCounter = 0
 blocked = False
 
-## Main loop for finding and chopping trees
-while findNewTree:
+# Afk/logout timing vars
+enableAfk = True
+afkTimeStart = None
+afkDuration = 0
+isAfk = False
+enableLogout = True
+logoutTimeStart = None
+logoutDuration = 0
+isLogout = False
+
+## Main loop
+while True:
+
+    # Check for under attack, afk, or logged out
+    if isUnderAttack():
+        evade()
+    if isAfk:
+        if time.time() - afkTimeStart > afkDuration:
+            isAfk = False
+            logging.info('AFK stop')
+        else:
+            time.sleep(1)
+            continue
+    # Decide if going afk or logging out
+    if not isAfk:
+        if random.random() < 0.05:
+            isAfk = True
+            afkTimeStart = time.time()
+            afkDuration = random.randint(3,6)
+            logging.info(
+                'AFK start, duration: ' + str(afkDuration) + ' seconds'
+                )
+            continue
     
+            
     # Try to find a tree
     logging.info('Searching for tree...')
-    if isUnderAttack():
-            evade()
     if failCounter > 10:
         print('Failed to find tree. Exiting')
         sys.exit(0)
@@ -561,7 +592,7 @@ while findNewTree:
         # Shuffle possibleTrees so you don't keep clicking the blocked tree
         possibleTrees = random.sample(possibleTrees, len(possibleTrees))
     for pos in possibleTrees:
-        helpers.mouseTo(pos[0], pos[1])
+        mouseTo(pos[0], pos[1])
         time.sleep(0.1)
         if isMouseOnTree(options['treetype']):
             clickedTree = True

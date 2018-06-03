@@ -8,6 +8,7 @@ multiple different scripts.
 """
 
 import time, sys, logging, random, math
+from mouseMoveFunction import mouseTo
 import pywinauto
 from pywinauto.findwindows import find_window
 from pywinauto.win32functions import SetForegroundWindow
@@ -91,78 +92,6 @@ def fDisp1(t):
 def fDisp2(t):
     return 6.75*(t*t - t*t*t)
 
-# Helper function for mouseTo: compose with curve function to
-# change speed along curve
-def speed(t):
-    if t < 0.5:
-        return (2*t*t)
-    return (1 - 2*(1-t)*(1-t))
-
-# Realistic mouse move function
-def mouseTo(p2x, p2y, precise=False):
-    # Clear and save pyautogui delays (will reset at end of func)
-    pag_md = pag.MINIMUM_DURATION
-    pag_ms = pag.MINIMUM_SLEEP
-    pag_p = pag.PAUSE
-    pag.MINIMUM_DURATION = 0
-    pag.MINIMUM_SLEEP = 0
-    pag.PAUSE = 0
-    # Set up points p1, p2 (given), vectors v1, v2
-    p1 = pag.position()
-    x1, y1 = p1
-    x2, y2 = (p2x, p2y)
-    dx = x2 - x1
-    dy = y2 - y1
-    v1 = (dx, dy)
-    normdx = math.sqrt(dx*dx)
-    normdy = math.sqrt(dy*dy)
-    dirSign = random.randint(0,1)
-    maxLength = min((normdx/10, normdy/10))
-    maxLength = max((5, maxLength))
-    lenSign = 5 + maxLength*random.random()
-    if normdx > normdy:
-        if dirSign == 0:
-            v2 = (0, lenSign)
-        else:
-            v2 = (0, (-1)*lenSign)
-    else:
-        if dirSign == 0:
-            v2 = (lenSign, 0)
-        else:
-            v2 = ((-1)*lenSign, 0)
-    v2x, v2y = v2
-    # Set up max speed sm, distance d, time to move tm, time between points dt,
-    # number of points numP
-    sm = random.uniform(400, 500)
-    d = math.sqrt(dx*dx + dy*dy)
-    tm = d/sm
-    dt = 0.015 # 15 ms between points
-    numP = round(tm/dt)
-    # Move along curve
-    if random.randint(0,1) == 0:
-        fDisp = fDisp1
-    else:
-        fDisp = fDisp2
-    tp = 0
-    ft = 0
-    for i in range(numP):
-        tp = i/numP
-        stp = speed(i/numP)
-        ft = fDisp(stp)
-        x = x1 + stp*dx + ft*v2x
-        y = y1 + stp*dy + ft*v2y
-        pag.moveTo(round(x), round(y))
-        time.sleep(0.015)
-    if precise:
-        pag.moveTo(x2, y2)
-    else:
-        pag.moveTo(x2 + random.randint(-2,2), y2 + random.randint(-2,2))
-    time.sleep(0.1 + random.random()*0.2)
-    # Reset pyautogui delays
-    pag.MINIMUM_DURATION = pag_md
-    pag.MINIMUM_SLEEP = pag_ms
-    pag.PAUSE = pag_p
-    
 
 # Click button using image search
 def clickButton(imagename):
