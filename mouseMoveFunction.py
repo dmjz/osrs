@@ -3,6 +3,7 @@
 import time
 import random
 import math
+import logging
 import pyautogui as pag
 from mouseMoveLog import records
 
@@ -16,12 +17,11 @@ def dot(v1, v2):
 def norm(v):
     return math.sqrt(v[0]*v[0] + v[1]*v[1])
 
-
 # Return pair (cosA, sinA) where A is the angle between vectors
 def trigsBetween(v1, v2):
     n1 = norm(v1)
     n2 = norm(v2)
-    if n1 < 0.00001 or n2 < 0.00001:
+    if n1 < 0.00000001 or n2 < 0.00000001:
         print('Zero vector passed to trigsBetween')
         return False
     orthv1 = (-1*v1[1], v1[0])
@@ -54,7 +54,7 @@ def runMove(mouseMove):
             move = mouseMove[i]
 
 # Move mouse to (x2 y2)
-def mouseTo(x2, y2):
+def mouseTo(x2, y2, precise=False):
     
     pause = pag.PAUSE
     pag.PAUSE = 0
@@ -63,6 +63,9 @@ def mouseTo(x2, y2):
     
     # Pick a random recorded move to use as the basis to compute move
     moveLen = math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1))
+    if moveLen < 5:
+        pag.moveTo(x2, y2)
+        return
     if moveLen < 80:
         lenClass = 's'
     elif moveLen < 200:
@@ -110,6 +113,10 @@ def mouseTo(x2, y2):
             'time': evt['time']
             })
     runMove(move)
+
+    # If precise==True, move to exact coordinate (x2, y2)
+    if precise:
+        pag.moveTo(x2, y2)
 
     pag.PAUSE = pause
     
