@@ -1,6 +1,6 @@
 # osrs
 
-## Botting programs for Old School Runescape.
+### Botting programs for Old School Runescape
 
 ## 1. woodcutter.py
 
