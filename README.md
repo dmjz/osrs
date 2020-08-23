@@ -18,4 +18,4 @@ Register new accounts on the RuneScape website and store the account credentials
 
 4. startAccount.py
 
-On a brand new account, use woodcutting profits to acquire a list of starting supplies from the Grand Exchange
+On a new account (fresh out of Tutorial Island), use woodcutting profits to acquire a list of starting supplies from the Grand Exchange
