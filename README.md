@@ -6,6 +6,7 @@
 
 This collection of scripts will do some basic tasks in the video game Old School RuneScape.
 They interact with the official game client by reading the screen and simulating keyboard/mouse events.
+Check out a demo [here](https://www.youtube.com/watch?v=kuUoJRoRcMU).
 
 Main packages:
 - PIL to process screenshots
