@@ -99,7 +99,9 @@ def startAccount(clientName, supplies, itemClearList=wcClearList,
 
     Assume account is logged in and character standing at tutorial exit spot.
     """
-
+    print('startAccount called:')
+    print(str({'setup':setup, 'travel':travel, 'buySupplies':buySupplies}))
+    
     # 0. Initialize
     startPAUSE = pag.PAUSE
     pag.PAUSE = 0
@@ -116,6 +118,9 @@ def startAccount(clientName, supplies, itemClearList=wcClearList,
         time.sleep( random.uniform(0.6, 0.7) )
         pos = pag.locateOnScreen('images\\shiftdrop_on.png')
         if not pos:
+            ###
+            ### Shift-click button locations has changed
+            ###
             helpers.clickHud('tab_settings_controls_shiftclick')
             time.sleep( random.uniform(0.3, 0.4) )
         helpers.clickHud('tab_inventory')
@@ -129,6 +134,11 @@ def startAccount(clientName, supplies, itemClearList=wcClearList,
         helpers.dropSlots(slots)
     
     # 2. Travel to forest south of GE
+    ###
+    ### setRun may be malfunctioning
+    ###
+    ### start location may be changed
+    ###
     if travel:
         if not travelTutExitToGEForest():
             logging.info('Travel TutExit to GEForest failed')
@@ -176,6 +186,7 @@ def startAccount(clientName, supplies, itemClearList=wcClearList,
         else:
             logging.info('Selling logs')
             if not helpers.openGEInterface():
+                ### Possible addition:
                 ### Do something here to try to return to GE booth
                 ### If it still doesn't work, exit function
                 return False

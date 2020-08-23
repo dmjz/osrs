@@ -555,6 +555,9 @@ def woodcutter(options=None, clientName=None, endOptions=None):
         options['invitem'] = 'Logs'
     else:
         options['invitem'] = options['treetype'] + ' logs'
+        
+    if not 'bank' in options:
+        options['bank'] = False
 
     # Set up HUD, camera, inventory
     helpers.focusClient(clientName)

@@ -336,10 +336,12 @@ def login(username, password, world, tutorial=False):
     
     # Wait for login buttons to appear (max wait 20 sec)
     waitCounter = 0
-    while not pag.locateCenterOnScreen(images['exbutton']):
+    while (not pag.locateCenterOnScreen(images['exbutton'])
+        and not pag.locateCenterOnScreen(images['loginbutton'])
+        ):
         waitCounter += 1
-        if waitCounter > 40:
-            logging.warning('Login failed: could not find exbutton')
+        if waitCounter > 20:
+            logging.warning('Login failed: could not find exbutton or loginbutton')
             return False
         time.sleep( random.uniform(0.5, 0.6) )
 

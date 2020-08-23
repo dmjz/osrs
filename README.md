@@ -1,15 +1,21 @@
 # osrs
 
-## Botting programs for Old School Runescape.
+!['osrs_screenshot'](docs/osrsbot.png)
 
-## 1. woodcutter.py
+## Botting programs for Old School Runescape
 
-A woodcutting script. Currently capable of automatically cutting and dropping normal trees, oaks, and willows, and banking some log types. To do: chopping and banking yew logs.
+1. woodcutter.py
 
-## 2. tutorial.py
+Automatically cut and drop normal trees, oaks, and willows; bank some log types
 
-A script that completes Tutorial Island.
+2. tutorial.py
 
-## 3. makeAccount.py and startAccount.py
+Complete Tutorial Island
 
-Scripts to register new accounts on the RuneScape website and store the account credentials, and to acquire a list of supplies from the Grand Exchange on a new account that just finished Tutorial Island.
+3. makeAccount.py
+
+Register new accounts on the RuneScape website and store the account credentials
+
+4. startAccount.py
+
+On a brand new account, use woodcutting profits to acquire a list of starting supplies from the Grand Exchange

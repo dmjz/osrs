@@ -137,8 +137,14 @@ def makeAccount():
     """
     Create a new OSRS account with random account data and return a 3-tuple:
         (email, password, display name)
-    or return False if account creation fails.
+    and write the new account credentials to private_accounts.py
+    Return False if account creation fails. 
     """
+    
+    #
+    # TODO: remove as much screen searching as possible. This seems
+    # to break rapidly and is a total goober way to do it anyway.
+    #
     
     # Start browser
     browserPath = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'

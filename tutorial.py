@@ -573,7 +573,7 @@ def killRat():
         logging.info('Still attacking...')
 
 
-
+#-----------------------------------------------------------------------
 """
 Script
 """
@@ -584,6 +584,10 @@ def tutorial(clientName):
     Assume starting with a completely new character that was just logged in
     for the first time (so starting on character design screen).
     """
+    
+    ##########
+    # Setup
+    ##########
     startPAUSE = pag.PAUSE
     pag.PAUSE = 0
     helpers.focusClient(clientName)
@@ -663,6 +667,21 @@ def tutorial(clientName):
     tlcChicken = tlcEntire
     brcChicken = helpers.coordsClientToPix((516, 167))
     
+    
+    #####################
+    # Start interaction
+    #####################
+    """
+    A lot of errors were introduced by mobile updates. Errors found so far
+    are marked by a triple comment:
+    ###
+    ### Message about the error
+    ###
+    As of writing this, the thing is totally fucked. Should print more
+    to console generally, so you can tell what part is happening - especially
+    when it appears nothing is happening (e.g. searching for a map image).
+    """
+    
     # Make random character
     designCharacter()
     
@@ -731,6 +750,10 @@ def tutorial(clientName):
     time.sleep( random.uniform(2.5, 2.7) )
     helpers.clickMap(17, 45)
     
+    ###
+    ### NOTE: SE part has been reorganized; different chat amounts,
+    ### apparently does fishing first now
+    ###
 
     # Complete Survival Expert tutorial part:
     # Click SE
@@ -747,6 +770,7 @@ def tutorial(clientName):
     helpers.chat(
         [{'type': 'continue'}]*2
         )
+    
     # Click inventory tab
     time.sleep( random.uniform(0.5, 1.5) )
     helpers.clickHud('tab_inventory')
@@ -829,6 +853,7 @@ def tutorial(clientName):
             logging.info('Failed to cook shrimp')
             return False
     time.sleep ( random.uniform(2, 2.5) )
+    
     # Run to gate
     if not helpers.clickMapImage('images\\tut_compref1.png', timeLimit=5):
         logging.info('Failed to navigate to gate')
@@ -849,7 +874,9 @@ def tutorial(clientName):
     pag.click()
     time.sleep(2)
 
-    
+    ###
+    ### Failed to navigate to cook's door
+    ###
     # Run to chef's door
     if not helpers.clickMapImage('images\\tut_comprefCookDoor.png'):
         if not helpers.clickMapImage('images\\tut_comprefCookDoorBlocked.png'):
@@ -896,6 +923,11 @@ def tutorial(clientName):
             ):
         return False
     
+    ###
+    ### Music tab is no longer here
+    ### Emotes no longer here
+    ### Run no longer automatically turned off
+    ###
     # Click music tab
     time.sleep( random.uniform(5, 6) )
     helpers.clickHud('tab_music')
@@ -929,6 +961,7 @@ def tutorial(clientName):
     time.sleep( random.uniform(1, 1.5) )
     helpers.clickHud('tab_settings_run')
     
+    
     # Run to Quest Guide
     helpers.clickMapDirection('n')
     time.sleep( random.uniform(7.4, 7.55) )
@@ -945,6 +978,9 @@ def tutorial(clientName):
     pag.click()
     time.sleep(2)
     
+    ###
+    ### Quest guide chats are different
+    ###
     # Click Quest Guide
     if not helpers.clickNPCdialog(
             bbox=(tlcQG[0], tlcQG[1], brcQG[0], brcQG[1]),
@@ -1040,6 +1076,9 @@ def tutorial(clientName):
     time.sleep( random.uniform(10, 10.15) )
     helpers.clickMapDirection('w', 0.2)
     time.sleep( random.uniform(6, 6.15) )
+    ###
+    ### No more second chat, go straight to mining
+    ###
     # Second chat
     if not helpers.clickNPCdialog(
             bbox=(tlcMI[0], tlcMI[1], brcMI[0], brcMI[1]),
@@ -1090,8 +1129,12 @@ def tutorial(clientName):
             ):
         return False
     time.sleep( random.uniform(8, 8.2) )
+    ###
+    ### Remove this click-to-continue
+    ###
     # Click continue chat box
     helpers.clickButton('images\\tut_clicktocontinue.png')
+    
     # Back to Mining Instructor
     helpers.clickMapDirection('n', multiplier=0.4)
     time.sleep( random.uniform(4, 4.15) )
@@ -1208,6 +1251,9 @@ def tutorial(clientName):
             ):
         return False
     time.sleep( random.uniform(4, 4.15) )
+    ###
+    ### Failed to detect that rat was dead
+    ###
     # Kill a rat
     killRat()
     
@@ -1272,7 +1318,9 @@ def tutorial(clientName):
     # Run to Banker
     helpers.clickMapImage('images\\tut_comprefBank.png')
     time.sleep( random.uniform(10, 10.2) )
-    
+    ###
+    ### No more bank chat here
+    ###
     # Chat: continue, chat option 1
     pos = helpers.coordsClientToPix(helpers.coordConsts['viewCenter'])
     pos = (pos[0] + random.randint(-2, 2), pos[1] - random.randint(50, 51))
@@ -1338,6 +1386,10 @@ def tutorial(clientName):
     pag.click()
     time.sleep( random.uniform(7, 7.15) )
     
+    ###
+    ### FA chat totally different, he does account mgmt tab and
+    ### has completely different chat sequence
+    ###
     # Talk to Financial Advisor
     # Chat: continue x9
     if not helpers.clickNPCdialog(
@@ -1388,6 +1440,9 @@ def tutorial(clientName):
         pag.click()
         time.sleep(2.5)
         
+    ###
+    ### BB chats different, change of tabs as well
+    ###
     # Talk to Brother Brace
     # Chat: continue x2
     if not helpers.clickNPCdialog(
@@ -1491,8 +1546,12 @@ def tutorial(clientName):
     
     helpers.clickHud('tab_magic')
     time.sleep( random.uniform(0.3, 0.5) )
+    ###
+    ### Actually we DO need to talk to him now
+    ###
     # Chat: continue x2 (NOTE: do NOT need to click magic instructor, chat
     #   starts automatically)
+    
     helpers.chat(
         [{'type': 'continue'}]*2
         )
@@ -1502,6 +1561,9 @@ def tutorial(clientName):
     helpers.clickMapImage('images\\tut_comprefChicken.png')
     time.sleep( random.uniform(4, 4.15) )
     # Click Wind Strike, then right-click cast on Chicken
+    ###
+    ### Need to fix chicken finding, it sucks
+    ###
     helpers.clickHud('tab_magic_windstrike')
     time.sleep( random.uniform(0.2, 0.35) )
     if not helpers.clickEntityDialog(
@@ -1533,7 +1595,9 @@ def tutorial(clientName):
             return False
         time.sleep( random.uniform(4.5, 4.65) )
         
-    
+    ###
+    ### Chats are different, picked wrong option and didn't go to mainland
+    ###
     # Chat: continue, chat option 1, continue, chat option 2, continue x6
     if not helpers.clickNPCdialog(
             bbox=(tlcEntire[0], tlcEntire[1], brcEntire[0], brcEntire[1]),
@@ -1550,9 +1614,12 @@ def tutorial(clientName):
         [{'type': 'choice', 'data': '2'}] +
         [{'type': 'continue'}]*6
         )
+
     time.sleep( random.uniform(4, 4.15) )
     # Wait then chat: continue to clear chat box
-    
+    ###
+    ### This might not be necessary any more
+    ###
     helpers.chat(
         [{'type': 'continue'}]
         )
